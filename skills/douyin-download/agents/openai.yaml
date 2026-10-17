@@ -1,0 +1,3 @@
+interface:
+  display_name: "抖音视频下载"
+  short_description: "下载最高可用画质的抖音视频，至少720p，保存到个人 OneDrive"

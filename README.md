@@ -2,6 +2,8 @@
 
 面向 Chrome / Edge 的纯浏览器扩展。打开抖音视频详情页，点击扩展图标，选择画质并下载 MP4。无需 Python、本地助手或 AI 服务。
 
+仓库同时提供 [douyin-download skill](skills/douyin-download/SKILL.md)，供 Codex 执行浏览器下载、画质选择和本地文件校验。
+
 ## 安装
 
 安装包见 [GitHub Releases](https://github.com/liulixiang1988/douyin-video-extension/releases)。请选择 `douyin-video-extension-版本.zip`，并按以下步骤加载。
@@ -12,6 +14,26 @@
 4. 将扩展固定到工具栏。
 
 升级时，将新版 ZIP 解压覆盖原来加载的扩展文件夹，在扩展管理页点击「重新加载」，再刷新抖音视频页。
+
+## 安装 Codex skill
+
+Skill 位于 [`skills/douyin-download`](skills/douyin-download)，包含入口说明、界面信息、MP4 校验/保存脚本和 blob/MSE 处理参考文档。它需要可用的浏览器工具及 Python 3，保存脚本只使用 Python 标准库。
+
+克隆本仓库后，在仓库根目录运行以下 PowerShell 命令，将完整 skill 文件夹复制到 Codex 的个人技能目录：
+
+```powershell
+$skillInstallRoot = if ($env:CODEX_HOME) {
+    Join-Path $env:CODEX_HOME 'skills'
+} else {
+    Join-Path $HOME '.codex\skills'
+}
+New-Item -ItemType Directory -Path $skillInstallRoot -Force | Out-Null
+Copy-Item -LiteralPath '.\skills\douyin-download' -Destination $skillInstallRoot -Recurse -Force
+```
+
+安装后可以使用 `$douyin-download 视频链接`，也可以直接要求 Codex 下载抖音视频。默认优先最高可用画质、至少 720p，并保存到个人 OneDrive 的 `video` 文件夹；可在请求中指定其他目录。
+
+Skill 的源码在本仓库中维护，更新后可重复复制到个人技能目录。浏览器扩展安装包只包含扩展文件；使用 skill 时请从源码仓库获取完整的 `skills/douyin-download` 文件夹。
 
 ## 使用
 
