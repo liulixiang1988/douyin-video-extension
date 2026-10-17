@@ -95,8 +95,8 @@ test('missing quality menu reports current quality, without inventing higher lev
   } finally { f.dom.window.close(); }
 });
 
-test('blob streams, non-MP4 sources and other sites fail clearly', async () => {
-  for (const options of [{source: 'blob:https://www.douyin.com/sample'}, {source: 'https://example.com/error.html'}, {url: 'https://douyin.com.evil.invalid/video/123'}]) {
+test('non-MP4 sources, foreign blob URLs and other sites fail clearly', async () => {
+  for (const options of [{source: 'blob:https://other.invalid/sample'}, {source: 'https://example.com/error.html'}, {url: 'https://douyin.com.evil.invalid/video/123'}]) {
     const f = fixture(options);
     try { assert.equal((await f.run()).ok, false); } finally { f.dom.window.close(); }
   }

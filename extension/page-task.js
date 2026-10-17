@@ -54,18 +54,20 @@ export async function pageTask(options = {}) {
     if (!video) return fail('not-ready', '视频尚未加载，或当前播放器不在屏幕内。请让目标视频显示并开始播放，再点刷新。');
     let source;
     try { source = new URL(video.currentSrc); } catch { return fail('unsupported-media', '当前播放器没有可下载的视频地址。'); }
-    if (source.protocol !== 'https:' || source.username || source.password) {
-      return fail('unsupported-media', '当前播放器使用分段流或非直接视频地址，这一版暂不支持。');
+    const needsSourceResolution = source.protocol === 'blob:' && source.origin === location.origin;
+    if ((!needsSourceResolution && source.protocol !== 'https:') || source.username || source.password) {
+      return fail('unsupported-media', '当前播放器没有可下载的视频地址，请刷新后重试。');
     }
     const format = source.searchParams.get('mime_type') || '';
     const sourceNode = Array.from(video.querySelectorAll('source')).find(node => node.src === video.currentSrc);
-    if (!/video_mp4|video\/mp4/i.test(format) && !/\.mp4(?:$|\?)/i.test(source.href) && !/video\/mp4/i.test(sourceNode?.type || video.getAttribute('type') || '')) {
+    if (!needsSourceResolution && !/video_mp4|video\/mp4/i.test(format) && !/\.mp4(?:$|\?)/i.test(source.href) && !/video\/mp4/i.test(sourceNode?.type || video.getAttribute('type') || '')) {
       return fail('unsupported-media', '尚未确认这条视频使用 MP4 直链，请在详情页刷新后重试。');
     }
     const title = compact(document.querySelector('h1')?.textContent || document.title.replace(/\s*[-–]\s*抖音\s*$/, ''));
     const qualities = qualityEntries(video).map(({element, ...quality}) => quality);
     return {ok: true, video: {
-      id, title: title.slice(0, 400), pageUrl: location.href, source: source.href,
+      id, title: title.slice(0, 400), pageUrl: location.href,
+      source: needsSourceResolution ? null : source.href, needsSourceResolution,
       width: video.videoWidth, height: video.videoHeight,
       resolution: Math.min(video.videoWidth, video.videoHeight),
       duration: Number.isFinite(video.duration) ? video.duration : null,

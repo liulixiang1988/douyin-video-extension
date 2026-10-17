@@ -1,5 +1,6 @@
 import {isDouyinPage, mediaUrl, filenameFor} from './core.js';
 import {pageTask} from './page-task.js';
+import {resolveVideoSource} from './resolve-source.js';
 
 export function createController(browser) {
   const inFlight = new Set();
@@ -23,7 +24,7 @@ export function createController(browser) {
       const selected = await runPage(tabId, {action: 'select-quality', expectedId, height});
       if (!selected.ok) throw new Error(selected.message);
       // Re-read just before download: autoplay or a quality change can invalidate a popup snapshot.
-      const fresh = await runPage(tabId, {action: 'inspect', expectedId});
+      const fresh = await inspect(tabId, expectedId);
       if (!fresh.ok) throw new Error(fresh.message);
       const video = fresh.video;
       if (video.id !== expectedId || video.resolution !== height) throw new Error('视频或清晰度已变化，请刷新扩展后重试。');
@@ -34,5 +35,23 @@ export function createController(browser) {
     } finally { inFlight.delete(tabId); }
   }
 
-  return {inspect: tabId => runPage(tabId, {action: 'inspect'}), startDownload};
+  async function inspect(tabId, expectedId) {
+    const snapshot = await runPage(tabId, {action: 'inspect', expectedId});
+    if (!snapshot.ok || !snapshot.video.needsSourceResolution) return snapshot;
+    const before = snapshot.video;
+    const results = await browser.scripting.executeScript({target: {tabId}, world: 'MAIN',
+      func: resolveVideoSource, args: [{id: before.id, width: before.width, height: before.height, duration: before.duration}]});
+    const resolved = results.find(item => item.frameId === 0)?.result;
+    if (!resolved?.ok) return resolved || {ok: false, message: '无法取得完整 MP4 地址，请刷新后重试。'};
+    const after = await runPage(tabId, {action: 'inspect', expectedId: before.id});
+    if (!after.ok) return after;
+    if (after.video.id !== before.id || after.video.width !== before.width || after.video.height !== before.height ||
+        resolved.id !== before.id || resolved.resolution !== before.resolution) {
+      return {ok: false, message: '视频或清晰度已变化，请刷新扩展后重试。'};
+    }
+    return {ok: true, video: {...after.video, source: after.video.source || mediaUrl(resolved.source),
+      needsSourceResolution: false, sourceResolution: 'full-mp4'}};
+  }
+
+  return {inspect, startDownload};
 }

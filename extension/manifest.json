@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "抖音视频下载",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "下载当前抖音视频，可选已有清晰度；打开扩展时提示需要登录的更高画质。",
   "minimum_chrome_version": "102",
   "permissions": ["activeTab", "scripting", "downloads"],
