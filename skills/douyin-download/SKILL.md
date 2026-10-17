@@ -5,13 +5,13 @@ description: "Download videos from Douyin links at the highest accessible resolu
 
 # Douyin Download
 
-Download the requested video through its working browser player, then verify and save the MP4. This workflow was verified on Windows on 2026-10-17.
+Download the requested video through its browser session, then verify and save the MP4. Direct playback downloads were verified on Windows on 2026-10-17. On macOS on 2026-10-18, both the Codex built-in browser with approved full CDP access and the standalone Edge resolver downloaded a verified 2560×1440 MP4.
 
 Distinguish agent-assisted downloads from browser-extension verification. If the user asks about the extension, exercise its real download path or obtain the user's test result; a download through this skill is not evidence that the extension works. For a `blob:` player or extension troubleshooting, read [references/blob-and-extension.md](references/blob-and-extension.md).
 
 ## Destination
 
-The user's established default is personal OneDrive's `video` folder. Resolve it from `OneDriveConsumer`, falling back to an existing `~/OneDrive`; honor an explicit destination instead. On this machine, `OneDrive` points to a separate work account, so it is not the default. The helper below implements this choice.
+The user's established default is personal OneDrive's `video` folder. Resolve it from `OneDriveConsumer`, falling back to an existing `~/OneDrive`; honor an explicit destination instead. Verify the account when `OneDrive` could mean a work account. On macOS, `~/OneDrive` may be a link to `~/Library/CloudStorage/OneDrive-Personal`; the helper resolves that link.
 
 ## Load the requested video
 
@@ -49,13 +49,13 @@ The user's established default is personal OneDrive's `video` folder. Resolve it
 
 The user's preference is **at least 720p, with the highest available resolution preferred**. Apply an explicit quality request instead when given. Treat the shorter encoded dimension as the threshold for both landscape and portrait videos: 1280×720 and 720×1280 meet 720p.
 
-1. Open the player's visible `Quality` / `清晰度` menu. Inspect the offered levels and choose the highest accessible one. An automatic setting can select a lower stream, so select a named quality when available. Dismiss an unrelated login overlay before trying to open the menu.
+1. Open the player's visible `Quality` / `清晰度` menu. Inspect the offered levels and choose the highest accessible one. An automatic setting can select a lower stream, so select a named quality when available. Dismiss an unrelated login overlay before trying to open the menu. The menu is not an authoritative maximum for complete-file downloads: Edge showed up to 1080p while its own authenticated details response supplied a full 2K MP4. Before proposing a downgrade, use the complete-source resolver through an approved in-app CDP session or the standalone helper to check candidates at the user's requested minimum.
 2. If the session is already logged in, use its highest available quality directly. If a higher level requires login, first identify the highest level available without login and ask the user to choose, using the actual observed levels: “这个视频最高支持 1080p，需要登录；不登录最高可下载 720p。你要登录下载更高画质，还是不登录下载当前最高画质？” Honor a login choice already stated for this download instead of asking again. Wait for the choice; an unanswered question is not a decision.
 
    **User chooses login:** show the normal login page and let the user complete authentication. Resume the same video and inspect its current dimensions before selecting quality again. The pending selection can take effect automatically: this workflow successfully downloaded and verified 1920×1080 with audio after login on 2026-10-17.
 
    **User chooses not to log in:** dismiss the login prompt and download the highest quality actually available in the signed-out session. This choice authorizes that fallback; do not ask again, keep prompting for login, or stop just because a higher level is locked. If the available maximum is below 720p, disclose that in the choice when known, then use the selected fallback's actual resolution as the helper's minimum. Preserve an explicit hard minimum given for the current request. If no video is accessible without login, explain that there is no signed-out version to download.
-3. After selection, verify the loaded player's `videoWidth` / `videoHeight` and fresh media URL. The menu selection alone does not prove the stream has switched. Download only after its dimensions match the intended level, then verify the file's encoded dimensions with the helper.
+3. For a download from the currently playing media element, verify `videoWidth` / `videoHeight` match the intended level; the menu selection alone does not prove the stream switched. For complete-source resolution, the player establishes identity and duration, while each complete MP4 candidate establishes available resolution. The player may stay at 720p while a verified 2K file is downloaded. In both cases, validate the saved file's encoded dimensions with the helper.
 4. If the highest accessible source is below 720p and the user has not already chosen the signed-out fallback or accepted lower quality, report the available resolution and ask whether it is acceptable. Use the user's selected level as the helper's minimum. Do not upscale a low-resolution source to claim it meets the threshold.
 
 ## Download and save
@@ -69,7 +69,7 @@ The user's preference is **at least 720p, with the highest available resolution 
    nodeRepl.write(downloadedPath);
    ```
 
-   If that ancestor is absent, build another unique locator from the observed DOM. For blob playback, resolve and download a matching complete MP4 through a supported tool surface as described in the reference. The browser handles its own session. Prefer this working path over installing a separate downloader: direct HTTP/yt-dlp requests returned HTTP 403 and a fresh-session requirement during the verified run. Download URLs expire; obtain them afresh for each video and keep them out of persistent skill files or diagnostic output.
+   If that ancestor is absent, build another unique locator from the observed DOM. For blob playback, resolve and download a matching complete MP4 through a supported tool surface as described in the reference. In the built-in browser, prefer the [approved CDP workflow](references/in-app-browser.md) to reuse its existing login. Discover its `cdp` capability before concluding that a separate browser is needed. If that route is unavailable or the user prefers another browser, use the [standalone browser helper](references/standalone-browser.md) where local browser automation is permitted. This helper provides its own browser session; it does not reuse the in-app browser login. Do not work around restrictions of an active browser tool. The browser handles its own session. Prefer this working path over installing a separate downloader: direct HTTP/yt-dlp requests returned HTTP 403 and a fresh-session requirement during the verified run. Download URLs expire; obtain them afresh for each video and keep them out of persistent skill files or diagnostic output.
 
 2. Run [scripts/save_video.py](scripts/save_video.py) with the returned path and observed metadata. Resolve the script relative to this skill's actual location. In PowerShell, use literal arguments and UTF-8:
 

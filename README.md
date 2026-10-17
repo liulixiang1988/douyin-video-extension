@@ -2,7 +2,7 @@
 
 面向 Chrome / Edge 的纯浏览器扩展。打开抖音视频详情页，点击扩展图标，选择画质并下载 MP4。无需 Python、本地助手或 AI 服务。
 
-仓库同时提供 [douyin-download skill](skills/douyin-download/SKILL.md)，供 Codex 执行浏览器下载、画质选择和本地文件校验。
+仓库同时提供 [douyin-download skill](skills/douyin-download/SKILL.md)，供 Codex 和其他兼容 Agent Skills 的 agent 执行浏览器下载、画质选择和本地文件校验。
 
 ## 安装
 
@@ -15,23 +15,35 @@
 
 升级时，将新版 ZIP 解压覆盖原来加载的扩展文件夹，在扩展管理页点击「重新加载」，再刷新抖音视频页。
 
-## 安装 Codex skill
+## 安装共享 skill
 
-Skill 位于 [`skills/douyin-download`](skills/douyin-download)，包含入口说明、界面信息、MP4 校验/保存脚本和 blob/MSE 处理参考文档。它需要可用的浏览器工具及 Python 3，保存脚本只使用 Python 标准库。
+Skill 位于 [`skills/douyin-download`](skills/douyin-download)，包含入口说明、完整 MP4 解析器、下载辅助脚本、文件校验和浏览器操作参考文档。保存脚本需要 Python 3，只使用标准库。
 
-克隆本仓库后，在仓库根目录运行以下 PowerShell 命令，将完整 skill 文件夹复制到 Codex 的个人技能目录：
+克隆本仓库后，在仓库根目录运行以下命令，将完整 skill 文件夹复制到用户级共享目录 `~/.agents/skills`。Codex 和其他支持该目录的 agent 可共用这一份；其他 agent 请按其技能发现规则配置此目录或安装到其支持的位置。
+
+macOS / Linux：
+
+```sh
+mkdir -p ~/.agents/skills
+cp -R skills/douyin-download ~/.agents/skills/
+```
+
+Windows PowerShell：
 
 ```powershell
-$skillInstallRoot = if ($env:CODEX_HOME) {
-    Join-Path $env:CODEX_HOME 'skills'
-} else {
-    Join-Path $HOME '.codex\skills'
-}
+$skillInstallRoot = Join-Path $HOME '.agents\skills'
 New-Item -ItemType Directory -Path $skillInstallRoot -Force | Out-Null
 Copy-Item -LiteralPath '.\skills\douyin-download' -Destination $skillInstallRoot -Recurse -Force
 ```
 
-安装后可以使用 `$douyin-download 视频链接`，也可以直接要求 Codex 下载抖音视频。默认优先最高可用画质、至少 720p，并保存到个人 OneDrive 的 `video` 文件夹；可在请求中指定其他目录。
+安装后，在 Codex 中可以使用 `$douyin-download 视频链接`；其他 agent 使用各自的技能调用方式。默认优先最高可用画质、至少 720p，并保存到个人 OneDrive 的 `video` 文件夹；可在请求中指定其他目录。
+
+可按环境选择下载方式：
+
+- **Codex 内置浏览器**：通过已获授权的 CDP 能力复用当前登录，解析完整 MP4 并下载，无需外部浏览器或扩展。启用方式和操作见 [内置浏览器流程](skills/douyin-download/references/in-app-browser.md)。
+- **独立 Edge / Chromium**：环境允许本地浏览器自动化时，使用通用下载辅助脚本；额外需要 Node.js 和 Playwright，并使用独立登录会话。安装和运行见 [独立浏览器流程](skills/douyin-download/references/standalone-browser.md)。
+
+两条路径均已验证下载 2560×1440 MP4，并校验实际尺寸、时长、音轨和保存文件的校验和。网页播放器的菜单或当前播放尺寸不一定代表可下载完整文件的最高画质。
 
 Skill 的源码在本仓库中维护，更新后可重复复制到个人技能目录。浏览器扩展安装包只包含扩展文件；使用 skill 时请从源码仓库获取完整的 `skills/douyin-download` 文件夹。
 
