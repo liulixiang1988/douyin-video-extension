@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>抖音视频下载</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="header">
+      <div class="brand-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 3v11m-4-4 4 4 4-4M5 16v4h14v-4"/></svg>
+      </div>
+      <div class="brand"><span class="eyebrow">留住喜欢的片段</span><h1>抖音视频下载</h1></div>
+      <button id="refresh" class="icon-button" type="button" title="刷新视频信息" aria-label="刷新视频信息">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6.3 7a7 7 0 0 1 11.6-1L20 9M4 15l2.1 3A7 7 0 0 0 17.7 17"/></svg>
+      </button>
+    </header>
+
+    <div id="loading" class="loading" role="status"><span class="spinner"></span><p>正在读取当前视频…</p></div>
+    <section id="error" class="message error" role="alert" hidden>
+      <h2>暂时无法下载</h2><p id="error-text"></p>
+      <button id="retry" class="text-button" type="button">重新读取</button>
+    </section>
+
+    <section id="video" hidden aria-label="当前视频">
+      <div class="video-card">
+        <div class="card-top"><span class="section-label">当前视频</span><span id="resolution" class="quality-badge"></span></div>
+        <h2 id="video-title"></h2>
+        <div class="video-meta"><span id="dimensions"></span><span class="separator">·</span><span id="duration"></span><span class="format">MP4</span></div>
+      </div>
+
+      <aside id="login-notice" class="notice" hidden>
+        <span class="notice-icon" aria-hidden="true">↗</span>
+        <div><h3 id="login-title"></h3><p id="login-text"></p><p class="notice-hint">如需更高画质，请在抖音网页自行登录，再点右上角刷新。</p></div>
+      </aside>
+
+      <div class="quality-row"><label for="quality">下载画质</label><select id="quality"></select></div>
+      <p id="quality-note" class="quality-note"></p>
+      <p id="low-quality" class="low-quality" hidden>当前选择低于 720p，将按所选画质保存。</p>
+      <button id="download" class="download-button" type="button"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v11m-4-4 4 4 4-4M5 16v4h14v-4"/></svg><span id="download-label">下载视频</span></button>
+      <p class="save-hint">保存时可选择 OneDrive 或其他文件夹</p>
+    </section>
+
+    <p id="status" class="status" role="status" aria-live="polite" hidden></p>
+    <footer><span class="privacy-dot"></span>只在你点击扩展时读取当前视频</footer>
+  </main>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>
